@@ -67,7 +67,7 @@ public class IconListPreference extends ListPreference {
     public CharSequence getEntry() {
         if (selectedEntry != -1)
             return entries[selectedEntry];
-        return super.getEntry().toString();
+        return super.getEntry();
     }
 
     @Override
