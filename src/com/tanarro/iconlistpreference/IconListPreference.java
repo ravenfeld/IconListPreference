@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable;
 import android.preference.ListPreference;
 import android.preference.PreferenceManager;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,6 +38,7 @@ public class IconListPreference extends ListPreference {
     private SharedPreferences.Editor editor;
     private String mKey;
     private int selectedEntry = -1;
+    private boolean mIconSimilar = false;
 
     public IconListPreference(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
@@ -63,6 +65,12 @@ public class IconListPreference extends ListPreference {
 
     }
 
+    public void setSharedPreferences(SharedPreferences sharedPreferences){
+        prefs = sharedPreferences;
+        editor = prefs.edit();
+    }
+
+
     @Override
     public CharSequence getEntry() {
         if (selectedEntry != -1)
@@ -82,7 +90,24 @@ public class IconListPreference extends ListPreference {
         super.onBindView(view);
         ImageView imageView = (ImageView) view.findViewById(R.id.icon);
         if (imageView != null && mIcon != null) {
-            imageView.setImageDrawable(mIcon);
+            if(mIconSimilar){
+                if(selectedEntry != -1){
+                    imageView.setImageResource(mEntryIcons[selectedEntry]);
+                }else{
+                    CharSequence[] entries = getEntries();
+                    int i=0;
+                    boolean change=false;
+                    while(i<entries.length && !change){
+                        if(entries[i].equals(getEntry())){
+                            imageView.setImageResource(mEntryIcons[i]);
+                            change=true;
+                        }
+                        i++;
+                    }
+                }
+            }else{
+                imageView.setImageDrawable(mIcon);
+            }
         }
     }
 
@@ -99,6 +124,10 @@ public class IconListPreference extends ListPreference {
 
     public void setEntryIcons(int[] entryIcons) {
         mEntryIcons = entryIcons;
+    }
+
+    public void setEnabledIconSimilar(boolean bool){
+        mIconSimilar = bool;
     }
 
     public void setEntryIcons(int entryIconsResId) {
@@ -153,10 +182,13 @@ public class IconListPreference extends ListPreference {
         class CustomHolder {
             private TextView text = null;
             private RadioButton rButton = null;
+            private ImageView image = null;
 
             CustomHolder(View row, int position) {
                 text = (TextView) row.findViewById(R.id.image_list_view_row_text_view);
                 text.setText(entries[position]);
+
+                image = (ImageView) row.findViewById(R.id.image_list_view_row_image_view);
 
                 rButton = (RadioButton) row.findViewById(R.id.image_list_view_row_radio_button);
                 rButton.setId(position);
@@ -164,8 +196,7 @@ public class IconListPreference extends ListPreference {
                 rButton.setChecked(selectedEntry == position);
 
                 if (mEntryIcons != null) {
-                    text.setText(" " + text.getText());
-                    text.setCompoundDrawablesWithIntrinsicBounds(mEntryIcons[position], 0, 0, 0);
+                    image.setImageResource(mEntryIcons[position]);
                 }
             }
         }
@@ -194,13 +225,14 @@ public class IconListPreference extends ListPreference {
                 public void onClick(View v) {
                     v.requestFocus();
 
-                    Dialog mDialog = getDialog();
-                    mDialog.dismiss();
+
 
                     IconListPreference.this.callChangeListener(entryValues[p]);
                     editor.putString(mKey, entryValues[p].toString());
                     selectedEntry = p;
                     editor.commit();
+                    Dialog mDialog = getDialog();
+                    mDialog.dismiss();
 
                 }
             });
